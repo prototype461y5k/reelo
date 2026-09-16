@@ -286,9 +286,6 @@ struct VideoRow: View {
                     if let r = video.currentRendition { Text("· \(r)").font(.caption).foregroundStyle(.secondary) }
                     if video.fileSize > 0 { Text("· \(formatBytes(video.fileSize))").font(.caption).foregroundStyle(.secondary) }
                 }
-                if video.downloadState == .downloading {
-                    ProgressView(value: video.downloadProgress).tint(Brand.accent).scaleEffect(y: 0.7, anchor: .center)
-                }
                 if video.downloadState == .failed, let e = video.errorMessage {
                     Text(e).font(.caption2).foregroundStyle(.red).lineLimit(2)
                 }
@@ -325,8 +322,7 @@ struct VideoRow: View {
         case .failed:
             Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.red)
         case .downloading:
-            Text("\(Int(video.downloadProgress * 100))%")
-                .font(.caption.monospacedDigit()).foregroundStyle(Brand.accent)
+            CircularProgressRing(progress: video.downloadProgress)
         case .skipped:
             Image(systemName: "minus.circle").foregroundStyle(.secondary)
         case .pending:
@@ -339,6 +335,30 @@ struct VideoRow: View {
         let mb = Double(b) / 1_048_576.0
         if mb >= 1024 { return String(format: "%.2f GB", mb / 1024) }
         return String(format: "%.1f MB", mb)
+    }
+}
+
+// MARK: - Circular progress ring
+
+/// Downloading indicator: a blue ring that slowly spins and fills as the
+/// download progresses (pending = dashed circle, done = green check).
+struct CircularProgressRing: View {
+    let progress: Double
+    @State private var spin = false
+    private let ringBlue = Color(red: 0.20, green: 0.56, blue: 0.98)
+
+    var body: some View {
+        ZStack {
+            Circle().stroke(Color.gray.opacity(0.22), lineWidth: 3)
+            Circle()
+                .trim(from: 0, to: max(0.05, min(progress, 1.0)))
+                .stroke(ringBlue, style: StrokeStyle(lineWidth: 3, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+                .rotationEffect(.degrees(spin ? 360 : 0))
+                .animation(.linear(duration: 1.1).repeatForever(autoreverses: false), value: spin)
+        }
+        .frame(width: 20, height: 20)
+        .onAppear { spin = true }
     }
 }
 

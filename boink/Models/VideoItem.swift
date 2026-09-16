@@ -70,7 +70,9 @@ struct VideoItem: Identifiable, Equatable {
         return sanitized.isEmpty ? "video" : sanitized
     }
 
-    static func == (lhs: VideoItem, rhs: VideoItem) -> Bool { lhs.id == rhs.id }
+    // NOTE: rely on the compiler-synthesized Equatable (compares ALL fields).
+    // A custom id-only == makes SwiftUI treat rows as unchanged and skip
+    // redrawing them, so per-row progress/state would freeze.
 }
 
 // MARK: - API response types
