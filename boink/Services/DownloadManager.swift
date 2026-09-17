@@ -137,18 +137,22 @@ final class DownloadManager {
     }
 
     private func downloadWithConcurrencyControl(videos toDownload: [VideoItem], reviewURL: URL, downloadFolder: URL, reviewID: String, preferredQuality: String) async throws {
-        var queue = toDownload
-        let queueLock = NSLock()
+        // Split the work into per-worker buckets up front. This keeps the
+        // downloads concurrent without any shared mutable state or a lock
+        // (NSLock is not safe to use across async suspension points).
+        let workerCount = max(1, min(maxConcurrent, toDownload.count))
+        var buckets: [[VideoItem]] = Array(repeating: [], count: workerCount)
+        for (i, video) in toDownload.enumerated() {
+            buckets[i % workerCount].append(video)
+        }
 
         await withTaskGroup(of: Void.self) { group in
-            for _ in 0..<maxConcurrent {
+            for bucket in buckets {
                 group.addTask { [weak self] in
                     guard let self else { return }
-                    while await self.isDownloading {
-                        queueLock.lock()
-                        let next = queue.isEmpty ? nil : queue.removeFirst()
-                        queueLock.unlock()
-                        guard let video = next else { return }
+                    for video in bucket {
+                        let stillRunning = await self.isDownloading
+                        if !stillRunning { return }
                         do {
                             try await self.downloadSingleVideo(video: video, reviewURL: reviewURL, downloadFolder: downloadFolder, reviewID: reviewID, preferredQuality: preferredQuality)
                         } catch {
