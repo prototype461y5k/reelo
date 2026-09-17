@@ -95,28 +95,45 @@ final class DownloadManager {
         _ = try await apiClient.fetchBootstrapJWT(from: reviewURL)
         let allVideos = try await apiClient.fetchAllVideos(userID: userID, folderID: folderID, reviewID: reviewID, baseURL: reviewURL)
 
-        let completedIDs = archive?.completedIDs() ?? []
-        var pending = allVideos.filter { !completedIDs.contains($0.id) }
+        // A video counts as already-downloaded only if the archive says so
+        // AND the file still exists on disk. If the user deleted a file,
+        // treat it as pending, download it again, and drop the stale entry.
+        func downloadedFileExists(for video: VideoItem) -> Bool {
+            let filename = VideoItem.sanitizeFilename(video.name) + ".mp4"
+            let dest = downloadFolder.appendingPathComponent(filename)
+            return FileManager.default.fileExists(atPath: dest.path)
+        }
 
-        // Show the whole list; mark already-downloaded ones.
+        let archivedIDs = archive?.completedIDs() ?? []
+        var completedIDs = Set<String>()
+        for video in allVideos where archivedIDs.contains(video.id) {
+            if downloadedFileExists(for: video) {
+                completedIDs.insert(video.id)
+            } else {
+                archive?.remove(video.id)
+            }
+        }
+
+        let pending = allVideos.filter { !completedIDs.contains($0.id) }
+
+        // Show the whole list; mark only the ones truly present on disk as done.
         var shown = allVideos
         for i in shown.indices where completedIDs.contains(shown[i].id) {
             shown[i].downloadState = .completed
             shown[i].downloadProgress = 1.0
         }
         videos = shown
+        completedCount = completedIDs.count
         isPreparing = false
 
         if pending.isEmpty {
             statusMessage = "Bu klasördeki tüm videolar zaten indirilmiş."
-            completedCount = allVideos.count
             overallProgress = 1.0
             return
         }
 
         statusMessage = "\(pending.count) video indiriliyor…"
         try await downloadWithConcurrencyControl(videos: pending, reviewURL: reviewURL, downloadFolder: downloadFolder, reviewID: reviewID, preferredQuality: preferredQuality)
-        _ = pending // silence unused mutation warning
     }
 
     private func downloadWithConcurrencyControl(videos toDownload: [VideoItem], reviewURL: URL, downloadFolder: URL, reviewID: String, preferredQuality: String) async throws {

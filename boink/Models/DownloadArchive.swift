@@ -44,6 +44,14 @@ class DownloadArchive {
     func clear() {
         try? FileManager.default.removeItem(at: archiveURL)
     }
+
+    /// Remove a single video ID from the archive. Used when the user
+    /// deleted the downloaded file and we want it to download again.
+    func remove(_ id: String) {
+        var ids = completedIDs()
+        ids.remove(id)
+        save(ids: Array(ids))
+    }
     
     private func save(ids: [String]) {
         let encoder = JSONEncoder()
