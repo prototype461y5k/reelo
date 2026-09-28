@@ -10,7 +10,6 @@ import AppKit
 
 enum Brand {
     static let name = "Reelo"
-    static let tagline = "Vimeo review klasörü indirici"
     static let accent = Color(red: 0.42, green: 0.36, blue: 0.90)
     static let accent2 = Color(red: 0.63, green: 0.32, blue: 0.86)
     static var gradient: LinearGradient {
@@ -52,6 +51,7 @@ struct ContentView: View {
 
     private var isDownloading: Bool { downloadManager?.isDownloading ?? false }
     private var isValidLink: Bool { Self.parseIDs(from: reviewURL) != nil }
+    private var lang: AppLanguage { settings.appLanguage }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -86,7 +86,7 @@ struct ContentView: View {
             ReeloLogo(size: 40)
             VStack(alignment: .leading, spacing: 1) {
                 Text(Brand.name).font(.system(size: 20, weight: .bold))
-                Text(Brand.tagline).font(.caption).foregroundStyle(.secondary)
+                Text(lang.t("app.tagline")).font(.caption).foregroundStyle(.secondary)
             }
             Spacer()
             Button {
@@ -95,7 +95,7 @@ struct ContentView: View {
                 Image(systemName: "gearshape.fill").font(.system(size: 15))
             }
             .buttonStyle(.borderless)
-            .help("Ayarlar")
+            .help(lang.t("common.settings"))
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
@@ -114,7 +114,7 @@ struct ContentView: View {
                 if !reviewURL.isEmpty {
                     Image(systemName: isValidLink ? "checkmark.circle.fill" : "exclamationmark.circle.fill")
                         .foregroundStyle(isValidLink ? .green : .orange)
-                        .help(isValidLink ? "Geçerli review linki" : "Link biçimi beklenenden farklı")
+                        .help(isValidLink ? lang.t("main.validLink") : lang.t("main.invalidLink"))
                 }
             }
             .padding(.horizontal, 12).padding(.vertical, 10)
@@ -126,7 +126,7 @@ struct ContentView: View {
                 Button(action: chooseFolder) {
                     HStack(spacing: 6) {
                         Image(systemName: "folder.fill").foregroundStyle(Brand.accent)
-                        Text(downloadFolder?.lastPathComponent ?? "Klasör seç")
+                        Text(downloadFolder?.lastPathComponent ?? lang.t("main.chooseFolder"))
                             .lineLimit(1).truncationMode(.middle)
                         Image(systemName: "chevron.up.chevron.down").font(.caption2).foregroundStyle(.secondary)
                     }
@@ -134,11 +134,11 @@ struct ContentView: View {
                     .background(RoundedRectangle(cornerRadius: 8).fill(Color.gray.opacity(0.12)))
                 }
                 .buttonStyle(.plain)
-                .help(downloadFolder?.path ?? "İndirme klasörü seçilmedi")
+                .help(downloadFolder?.path ?? lang.t("main.noFolder"))
                 .disabled(isDownloading)
 
                 Picker("", selection: $preferredQuality) {
-                    Text("En iyi").tag("best")
+                    Text(lang.t("common.best")).tag("best")
                     Text("1080p").tag("1080p")
                     Text("720p").tag("720p")
                     Text("480p").tag("480p")
@@ -152,12 +152,12 @@ struct ContentView: View {
 
                 if isDownloading {
                     Button(role: .destructive, action: handleCancel) {
-                        Label("İptal", systemImage: "xmark.circle.fill")
+                        Label(lang.t("common.cancel"), systemImage: "xmark.circle.fill")
                     }
                     .buttonStyle(.borderedProminent).tint(.red)
                 } else {
                     Button(action: handleDownload) {
-                        Label("İndir", systemImage: "arrow.down.circle.fill").fontWeight(.semibold)
+                        Label(lang.t("main.download"), systemImage: "arrow.down.circle.fill").fontWeight(.semibold)
                     }
                     .buttonStyle(.borderedProminent).tint(Brand.accent)
                     .disabled(!isValidLink || downloadFolder == nil)
@@ -188,7 +188,7 @@ struct ContentView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(message).font(.callout).textSelection(.enabled)
                 if let code {
-                    Text("Hata kodu: \(code)").font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
+                    Text(String(format: lang.t("main.errorCode"), code)).font(.caption2).foregroundStyle(.secondary).textSelection(.enabled)
                 }
             }
             Spacer()
@@ -211,7 +211,7 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
-            EmptyStateView()
+            EmptyStateView(lang: lang)
         }
     }
 
@@ -223,8 +223,8 @@ struct ContentView: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.prompt = "Seç"
-        panel.message = "Videoların indirileceği klasörü seç"
+        panel.prompt = lang.t("common.choose")
+        panel.message = lang.t("main.folderPrompt")
         if let current = downloadFolder { panel.directoryURL = current }
         if panel.runModal() == .OK, let url = panel.url {
             downloadFolder = url
@@ -365,11 +365,13 @@ struct CircularProgressRing: View {
 // MARK: - Empty state
 
 struct EmptyStateView: View {
+    let lang: AppLanguage
+
     var body: some View {
         VStack(spacing: 18) {
             ReeloLogo(size: 76)
-            Text("Vimeo review linkini yapıştır").font(.title3.weight(.semibold))
-            Text("Herkese açık, parolasız Vimeo review klasörlerindeki videoları\ntoplu olarak indirir.")
+            Text(lang.t("empty.title")).font(.title3.weight(.semibold))
+            Text(lang.t("empty.subtitle"))
                 .font(.callout).foregroundStyle(.secondary).multilineTextAlignment(.center)
             Text("vimeo.com/reviews/{review_id}/users/{user_id}/folders/{folder_id}")
                 .font(.caption.monospaced()).foregroundStyle(.secondary)

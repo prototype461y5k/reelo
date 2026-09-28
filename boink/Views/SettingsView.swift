@@ -11,14 +11,16 @@ struct SettingsView: View {
     var onFolderChange: (URL?) -> Void = { _ in }
     @Environment(\.dismiss) private var dismiss
 
+    private var lang: AppLanguage { settings.appLanguage }
+
     var body: some View {
         VStack(spacing: 0) {
             // Header
             HStack(spacing: 12) {
                 ReeloLogo(size: 34)
                 VStack(alignment: .leading, spacing: 0) {
-                    Text("Ayarlar").font(.title3.weight(.semibold))
-                    Text("Reelo tercihleri").font(.caption).foregroundStyle(.secondary)
+                    Text(lang.t("settings.title")).font(.title3.weight(.semibold))
+                    Text(lang.t("settings.subtitle")).font(.caption).foregroundStyle(.secondary)
                 }
                 Spacer()
             }
@@ -28,20 +30,20 @@ struct SettingsView: View {
             ScrollView {
                 VStack(spacing: 16) {
                     // Download folder
-                    settingsCard(icon: "folder.fill", title: "İndirme klasörü") {
+                    settingsCard(icon: "folder.fill", title: lang.t("settings.downloadFolder")) {
                         HStack {
-                            Text(settings.defaultDownloadFolder?.path ?? "Varsayılan: İndirilenler")
+                            Text(settings.defaultDownloadFolder?.path ?? lang.t("settings.defaultFolder"))
                                 .font(.callout).foregroundStyle(settings.defaultDownloadFolder == nil ? .secondary : .primary)
                                 .lineLimit(1).truncationMode(.middle)
                             Spacer()
-                            Button("Değiştir", action: chooseFolder)
+                            Button(lang.t("settings.change"), action: chooseFolder)
                         }
                     }
 
                     // Quality
-                    settingsCard(icon: "slider.horizontal.3", title: "Varsayılan kalite") {
+                    settingsCard(icon: "slider.horizontal.3", title: lang.t("settings.quality")) {
                         Picker("", selection: $settings.preferredQuality) {
-                            Text("En iyi").tag("best")
+                            Text(lang.t("common.best")).tag("best")
                             Text("1080p").tag("1080p")
                             Text("720p").tag("720p")
                             Text("480p").tag("480p")
@@ -52,10 +54,10 @@ struct SettingsView: View {
                     }
 
                     // Concurrency
-                    settingsCard(icon: "arrow.down.circle", title: "Aynı anda indirme") {
+                    settingsCard(icon: "arrow.down.circle", title: lang.t("settings.concurrency")) {
                         Stepper(value: $settings.maxConcurrentDownloads, in: 1...10) {
                             HStack {
-                                Text("Paralel indirme sayısı")
+                                Text(lang.t("settings.concurrentCount"))
                                 Spacer()
                                 Text("\(settings.maxConcurrentDownloads)")
                                     .font(.body.monospacedDigit().weight(.semibold))
@@ -65,11 +67,11 @@ struct SettingsView: View {
                     }
 
                     // Skip completed
-                    settingsCard(icon: "checkmark.circle", title: "Devam etme") {
+                    settingsCard(icon: "checkmark.circle", title: lang.t("settings.resume")) {
                         Toggle(isOn: $settings.skipCompleted) {
                             VStack(alignment: .leading, spacing: 2) {
-                                Text("Zaten indirilenleri atla")
-                                Text("Aynı klasörü tekrar girdiğinde tamamlananlar atlanır.")
+                                Text(lang.t("settings.skip"))
+                                Text(lang.t("settings.skipSubtitle"))
                                     .font(.caption).foregroundStyle(.secondary)
                             }
                         }
@@ -77,12 +79,31 @@ struct SettingsView: View {
                         .tint(Brand.accent)
                     }
 
+                    // Language
+                    settingsCard(icon: "globe", title: lang.t("settings.language")) {
+                        HStack {
+                            Text(lang.t("settings.languageSubtitle"))
+                                .font(.callout).foregroundStyle(.secondary)
+                            Spacer()
+                            Picker(lang.t("settings.language"), selection: $settings.language) {
+                                ForEach(AppLanguage.allCases) { l in
+                                    Text("\(l.flagEmoji) \(l.displayName)").tag(l.rawValue)
+                                }
+                            }
+                            .labelsHidden()
+                            .frame(width: 180)
+                            .onChange(of: settings.language) {
+                                settings.save()
+                            }
+                        }
+                    }
+
                     // About
-                    settingsCard(icon: "info.circle", title: "Hakkında") {
+                    settingsCard(icon: "info.circle", title: lang.t("settings.about")) {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("\(Brand.name) \(appVersion)")
-                            Text(Brand.tagline).font(.caption).foregroundStyle(.secondary)
-                            Text("Saf Swift + SwiftUI · harici bağımlılık yok")
+                            Text(lang.t("app.tagline")).font(.caption).foregroundStyle(.secondary)
+                            Text(lang.t("settings.aboutStack"))
                                 .font(.caption).foregroundStyle(.secondary)
                         }
                     }
@@ -93,7 +114,7 @@ struct SettingsView: View {
             Divider()
             HStack {
                 Spacer()
-                Button("Tamam") { settings.save(); dismiss() }
+                Button(lang.t("common.done")) { settings.save(); dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .buttonStyle(.borderedProminent).tint(Brand.accent)
             }
@@ -128,7 +149,7 @@ struct SettingsView: View {
         panel.canChooseDirectories = true
         panel.allowsMultipleSelection = false
         panel.canCreateDirectories = true
-        panel.prompt = "Seç"
+        panel.prompt = lang.t("common.choose")
         if let current = settings.defaultDownloadFolder { panel.directoryURL = current }
         if panel.runModal() == .OK, let url = panel.url {
             settings.defaultDownloadFolder = url

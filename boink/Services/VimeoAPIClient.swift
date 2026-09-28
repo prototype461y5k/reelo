@@ -33,38 +33,39 @@ final class VimeoAPIClient {
         case network(Error)
 
         var errorDescription: String? {
+            let lang = AppSettings.default.appLanguage
             switch self {
             case .invalidURL:
-                return "Geçersiz bağlantı."
+                return lang.t("err.invalidURL")
             case .badLinkFormat:
-                return "Bağlantı biçimi tanınmadı. Doğru biçim: vimeo.com/reviews/{review}/users/{user}/folders/{folder}"
+                return lang.t("err.badLinkFormat")
             case .pageNotReachable(let s):
-                return "Review sayfasına ulaşılamadı (HTTP \(s)). İnternet bağlantını ve linki kontrol et."
+                return String(format: lang.t("err.pageNotReachable"), s)
             case .bootstrapMissing:
-                return "Sayfa yapısı tanınamadı. Vimeo sayfa düzenini değiştirmiş olabilir."
+                return lang.t("err.bootstrapMissing")
             case .jwtMissing:
-                return "Oturum anahtarı (JWT) alınamadı. Link herkese açık bir review linki mi?"
+                return lang.t("err.jwtMissing")
             case .notAuthorized(let s):
-                return "Yetki reddedildi (HTTP \(s)). Bu review linki herkese açık ve parolasız olmalı."
+                return String(format: lang.t("err.notAuthorized"), s)
             case .notFound:
-                return "Klasör veya review bulunamadı (HTTP 404). Link süresi dolmuş ya da silinmiş olabilir."
+                return lang.t("err.notFound")
             case .rateLimited(let ra):
-                if let ra { return "Vimeo hız sınırı: \(Int(ra)) sn bekleniyor…" }
-                return "Vimeo hız sınırına takıldı, bekleniyor…"
+                if let ra { return String(format: lang.t("err.rateLimitedWait"), Int(ra)) }
+                return lang.t("err.rateLimited")
             case .serverError(let s):
-                return "Vimeo sunucu hatası (HTTP \(s)). Biraz sonra tekrar dene."
+                return String(format: lang.t("err.serverError"), s)
             case .invalidJSON(let d):
-                return "Yanıt çözümlenemedi. (\(d))"
+                return String(format: lang.t("err.invalidJSON"), d)
             case .noVersionFound:
-                return "Video sürümü bulunamadı."
+                return lang.t("err.noVersion")
             case .noDownloadMatch:
-                return "Bu video için indirme bağlantısı bulunamadı (indirme kapalı olabilir)."
+                return lang.t("err.noDownload")
             case .downloadFailed(let s):
-                return "İndirme başarısız (HTTP \(s))."
+                return String(format: lang.t("err.downloadFailed"), s)
             case .diskWriteFailed(let m):
-                return "Dosya diske yazılamadı: \(m)"
+                return String(format: lang.t("err.diskWrite"), m)
             case .network(let e):
-                return "Ağ hatası: \(e.localizedDescription)"
+                return String(format: lang.t("err.network"), e.localizedDescription)
             }
         }
 

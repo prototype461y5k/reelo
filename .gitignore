@@ -1,7 +1,6 @@
 # Xcode
 ## build products
 ##/Build/
-##衍
 *.pbxuser
 !default.pbxuser
 *.mode1v3
@@ -59,3 +58,6 @@ bootstrap.json
 list_response.json
 autotest.txt
 _test_downloads/
+
+# Local build output
+build/

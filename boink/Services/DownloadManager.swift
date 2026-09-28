@@ -30,6 +30,10 @@ final class DownloadManager {
     private let appSettings: AppSettings
     private let maxConcurrent: Int
 
+    /// The UI language, read fresh each time so a mid-download language
+    /// change in Settings applies to the next status message.
+    private var lang: AppLanguage { AppSettings.default.appLanguage }
+
     init(apiClient: VimeoAPIClient = VimeoAPIClient(), reviewID: String, folderID: String, settings: AppSettings = .default) {
         self.apiClient = apiClient
         self.archive = DownloadArchive(reviewID: reviewID, folderID: folderID)
@@ -48,25 +52,25 @@ final class DownloadManager {
         failedCount = 0
         errorMessage = nil
         errorCode = nil
-        statusMessage = "Hazırlanıyor…"
+        statusMessage = lang.t("dl.preparing")
         startSystemWakeActivity()
 
         Task {
             do {
                 try await runDownloads(reviewURL: reviewURL, downloadFolder: downloadFolder, preferredQuality: preferredQuality)
                 if failedCount == 0 {
-                    statusMessage = "Tüm indirmeler tamamlandı 🎉"
+                    statusMessage = lang.t("dl.allComplete")
                 } else {
-                    statusMessage = "\(completedCount) indirildi, \(failedCount) başarısız."
+                    statusMessage = String(format: lang.t("dl.partial"), completedCount, failedCount)
                 }
             } catch let e as VimeoAPIClient.APIError {
                 errorMessage = e.errorDescription
                 errorCode = e.code
-                statusMessage = "Hata: \(e.errorDescription ?? "Bilinmeyen")"
+                statusMessage = String(format: lang.t("dl.error"), e.errorDescription ?? lang.t("dl.unknown"))
             } catch {
                 errorMessage = error.localizedDescription
                 errorCode = "REELO-ERR"
-                statusMessage = "Hata: \(error.localizedDescription)"
+                statusMessage = String(format: lang.t("dl.error"), error.localizedDescription)
             }
             isDownloading = false
             isPreparing = false
@@ -80,7 +84,7 @@ final class DownloadManager {
         isPreparing = false
         stopSystemWakeActivity()
         apiClient = VimeoAPIClient()
-        statusMessage = "İndirme iptal edildi."
+        statusMessage = lang.t("dl.cancelled")
     }
 
     // MARK: - Orchestration
@@ -91,7 +95,7 @@ final class DownloadManager {
         // Make sure the destination exists.
         try? FileManager.default.createDirectory(at: downloadFolder, withIntermediateDirectories: true)
 
-        statusMessage = "Video listesi alınıyor…"
+        statusMessage = lang.t("dl.fetchingList")
         _ = try await apiClient.fetchBootstrapJWT(from: reviewURL)
         let allVideos = try await apiClient.fetchAllVideos(userID: userID, folderID: folderID, reviewID: reviewID, baseURL: reviewURL)
 
@@ -127,12 +131,12 @@ final class DownloadManager {
         isPreparing = false
 
         if pending.isEmpty {
-            statusMessage = "Bu klasördeki tüm videolar zaten indirilmiş."
+            statusMessage = lang.t("dl.allAlreadyDownloaded")
             overallProgress = 1.0
             return
         }
 
-        statusMessage = "\(pending.count) video indiriliyor…"
+        statusMessage = String(format: lang.t("dl.downloadingCount"), pending.count)
         try await downloadWithConcurrencyControl(videos: pending, reviewURL: reviewURL, downloadFolder: downloadFolder, reviewID: reviewID, preferredQuality: preferredQuality)
     }
 
@@ -166,7 +170,7 @@ final class DownloadManager {
 
     private func downloadSingleVideo(video: VideoItem, reviewURL: URL, downloadFolder: URL, reviewID: String, preferredQuality: String) async throws {
         setState(video.id, .downloading, progress: 0)
-        statusMessage = "İndiriliyor: \(video.name)"
+        statusMessage = String(format: lang.t("dl.downloading"), video.name)
 
         let jwt = try await apiClient.ensureJWT(from: reviewURL)
         let info = try await apiClient.fetchDownloadURL(video: video, reviewID: reviewID, jwt: jwt, preferredQuality: preferredQuality)
@@ -219,7 +223,7 @@ final class DownloadManager {
         if let idx = index(of: video.id) {
             videos[idx].downloadState = .failed
             if let e = error as? VimeoAPIClient.APIError {
-                videos[idx].errorMessage = "\(e.errorDescription ?? "Hata") (\(e.code))"
+                videos[idx].errorMessage = "\(e.errorDescription ?? lang.t("dl.errorShort")) (\(e.code))"
             } else {
                 videos[idx].errorMessage = error.localizedDescription
             }
@@ -235,7 +239,7 @@ final class DownloadManager {
     }
 
     private func startSystemWakeActivity() {
-        activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated], reason: "Reelo: indirme sürüyor")
+        activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated], reason: "Reelo: download in progress")
     }
 
     private func stopSystemWakeActivity() {
