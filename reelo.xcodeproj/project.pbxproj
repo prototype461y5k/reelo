@@ -61,7 +61,7 @@
 				A00000050000000000000005 /* Services */,
 				A00000050000000000000006 /* Views */,
 			);
-			path = boink;
+			path = reelo;
 			sourceTree = "<group>";
 		};
 		A00000050000000000000003 /* Products */ = {
@@ -305,7 +305,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"boink/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"reelo/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Reelo";
@@ -340,7 +340,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				COMBINE_HIDPI_IMAGES = YES;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_ASSET_PATHS = "\"boink/Preview Content\"";
+				DEVELOPMENT_ASSET_PATHS = "\"reelo/Preview Content\"";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_CFBundleDisplayName = "Reelo";
