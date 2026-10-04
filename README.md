@@ -3,7 +3,7 @@
 **Reelo** is a native macOS app that downloads every video in a public Vimeo *review* folder in one click, as a batch. It is written in pure Swift + SwiftUI, with no external dependencies (no yt-dlp, no ffmpeg, nothing).
 
 <p align="center">
-  <img src="boink/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="128" alt="Reelo"/>
+  <img src="Reelo/Assets.xcassets/AppIcon.appiconset/icon_256x256.png" width="128" alt="Reelo"/>
 </p>
 
 ## Download
